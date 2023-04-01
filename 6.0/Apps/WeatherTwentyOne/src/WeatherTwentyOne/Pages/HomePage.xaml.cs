@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Microsoft.Maui.Controls.PlatformConfiguration.WindowsSpecific;
+using WeatherTwentyOne.Models;
 using WeatherTwentyOne.Services;
 using WeatherTwentyOne.ViewModels;
 using Application = Microsoft.Maui.Controls.Application;
@@ -10,6 +11,7 @@ namespace WeatherTwentyOne.Pages;
 public partial class HomePage : ContentPage
 {
     static bool isSetup = false;
+    RestService _restService;
 
     public HomePage(HomeViewModel vm)
     {
@@ -23,6 +25,7 @@ public partial class HomePage : ContentPage
 
             SetupAppActions();
             SetupTrayIcon();
+            _restService = new RestService();
         }
     }
 
@@ -56,4 +59,26 @@ public partial class HomePage : ContentPage
                     ?.ShowNotification("Hello Build! 😻 From .NET MAUI", "How's your weather?  It's sunny where we are 🌞");
         }
     }
+    async void OnGetWeatherButtonClicked(object sender, EventArgs e)
+    {
+       // if (!string.IsNullOrWhiteSpace(_cityEntry.Text))
+       // {
+            OpenWeatherMapModel weatherData = await
+            _restService.GetWeatherData(GenerateRequestURL(Constants.OpenWeatherMapEndpoint));
+
+            BindingContext = weatherData;
+       // }
+    }
+
+    string GenerateRequestURL(string endPoint)
+    {
+        // Update to get the current city being used
+        string requestUri = endPoint;
+        requestUri += $"lat=39.616512";
+        requestUri += $"&lon=-104.9264128";
+        requestUri += $"&APPID={Constants.OpenWeatherMapAPIKey}";
+        requestUri += $"&units=imperial";
+        return requestUri;
+    }
 }
+

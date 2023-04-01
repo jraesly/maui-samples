@@ -51,7 +51,18 @@
                     <v:WindLiveWidget 
                         x:Name="WindWidget"
                         WidthRequest="200" />
-                    
+                    <StackLayout
+            Grid.Row="2"
+            Margin="0,10,0,0"
+            Orientation="Vertical">
+                        <Button
+                BackgroundColor="Blue"
+                BorderColor="White"
+                BorderWidth="1"
+                Clicked="OnGetWeatherButtonClicked"
+                Text="Get Weather"
+                TextColor="White" />
+                    </StackLayout>
                 </FlexLayout>
 
                 <v:CurrentWidget
