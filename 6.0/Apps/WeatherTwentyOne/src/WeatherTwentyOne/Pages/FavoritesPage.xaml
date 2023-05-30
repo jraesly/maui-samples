@@ -15,30 +15,30 @@
                 Padding="0"
                 CornerRadius="20"
                 HasShadow="False"
-                x:DataType="c:Location"
+                x:DataType="m:FavoriteLocation"
                 BackgroundColor="{AppThemeBinding Light={StaticResource LightGray}, Dark={StaticResource Background_Mid}}">
                 <Grid
                                 RowDefinitions="42,40,*"
                                 Padding="20">
-                    <Image
+                    <!--<Image
                                     Source="{Binding Icon}"
                                     WidthRequest="36"
                                     HeightRequest="36"
                                     VerticalOptions="Start"
-                                    HorizontalOptions="End"/>
+                                    HorizontalOptions="End"/>-->
 
-                    <Label Text="{Binding Value}" class="LargeTitle"
-                                           />
+                    <!--<Label Text="{Binding Value}" class="LargeTitle"
+                                           />-->
 
                     <VerticalStackLayout
                                     Spacing="0"
                                     Grid.RowSpan="3" 
                                     VerticalOptions="Center">
-                        <Label Text="{Binding Name}" class="Subhead" />
-                        <Label Text="{Binding WeatherStation}" class="SubContent"/>
+                        <Label Text="{Binding City}" class="Subhead" />
+                        <Label Text="{Binding State}" class="SubContent"/>
                     </VerticalStackLayout>
 
-                    <HorizontalStackLayout
+                    <!--<HorizontalStackLayout
                                 Grid.Row="2"
                                 Spacing="10"
                                 VerticalOptions="End">
@@ -55,7 +55,7 @@
                         <Image Source="solid_humidity.png" VerticalOptions="Center"
                                        WidthRequest="20" HeightRequest="20"/>
                         <Label Text="45%" class="Small" VerticalOptions="Center"/>
-                    </HorizontalStackLayout>
+                    </HorizontalStackLayout>-->
                 </Grid>
             </Frame>
 
@@ -150,7 +150,9 @@
             <CollectionView
                 Margin="15"
                 ItemsSource="{Binding Favorites}"
-                ItemTemplate="{StaticResource FavTemplate}">
+                ItemTemplate="{StaticResource FavTemplate}"
+                SelectionChangedCommand="{Binding LocationSelectedCommand}">
+                
                 <CollectionView.ItemsLayout>
                     <GridItemsLayout Orientation="Vertical"
                                      Span="2"

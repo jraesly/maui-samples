@@ -14,9 +14,16 @@ public partial class FavoritesPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
         await Task.Delay(300);
+
+        // Refresh the favorite locations
+        if (BindingContext is FavoritesViewModel viewModel)
+        {
+            viewModel.RefreshFavoriteLocations();
+        }
+
         TransitionIn();
+
     }
 
     async void TransitionIn()

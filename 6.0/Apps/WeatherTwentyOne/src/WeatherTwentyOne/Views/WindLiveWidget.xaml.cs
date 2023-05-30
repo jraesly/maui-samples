@@ -1,29 +1,39 @@
-﻿namespace WeatherTwentyOne.Views;
+﻿using WeatherTwentyOne.Models;
+using WeatherTwentyOne.ViewModels;
+
+
+namespace WeatherTwentyOne.Views;
 
 public partial class WindLiveWidget:VerticalStackLayout
 {
-    Random rand;
     System.Timers.Timer aTimer;
+    public OpenWeatherMapModel weatherData;
 
-    public WindLiveWidget()
+    public WindLiveWidget(OpenWeatherMapModel weatherData)
     {
-        InitializeComponent();            
+        InitializeComponent();
+        BindingContext = weatherData;
+        if (aTimer == null && DeviceInfo.Platform != DevicePlatform.Android)
+            Start();
+
     }
 
     public void OnTapped(object sender, EventArgs e)
     {
-        if (aTimer == null && DeviceInfo.Platform != DevicePlatform.Android)
-            Start();
+
     }
 
     public void Start()
     {
-        rand = new Random();
+        weatherData = BindingContext as OpenWeatherMapModel;
 
         // Create a timer with a two second interval.
-        aTimer = new System.Timers.Timer(300);
+        aTimer = new System.Timers.Timer(31000);
         // Hook up the Elapsed event for the timer. 
-        aTimer.Elapsed += UpdateLiveWind;
+        this.Dispatcher.Dispatch(() =>
+        {
+            aTimer.Elapsed += UpdateLiveWind;
+        });
         aTimer.AutoReset = true;
         aTimer.Enabled = true;
     }
@@ -38,15 +48,12 @@ public partial class WindLiveWidget:VerticalStackLayout
         var direction = GetDirection();
 
         this.Dispatcher.Dispatch(() => {
-            Needle.RotateTo(WindValues[direction], 50, Easing.SpringOut);
+            Needle.RotateTo(direction, 50, Easing.SpringOut);
         });
     }
-
-    readonly double[] WindValues = { 98, 84, 140, 92, 55 };//98, 84, 140, 92, 55
-
     private int GetDirection()
     {
-        return rand.Next(0, WindValues.Length - 1);
+        return weatherData.current.wind_deg;
     }
 
     private void TapGestureRecognizer_Tapped(object sender, EventArgs e)

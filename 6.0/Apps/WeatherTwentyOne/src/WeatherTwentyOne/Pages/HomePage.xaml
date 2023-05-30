@@ -5,41 +5,63 @@
     xmlns:v="clr-namespace:WeatherTwentyOne.Views"
     xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
     ios:Page.UseSafeArea="True"
-    Title="{OnIdiom 'St. Louis, Missouri USA', Desktop=''}"
+    Title="{Binding LocationTitle}"
     Shell.NavBarIsVisible="{OnPlatform True, MacCatalyst=False}"
     x:Class="WeatherTwentyOne.Pages.HomePage"
     x:Name="this">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Style x:Key="ButtonStyle" TargetType="Button">
+                <Setter Property="BackgroundColor" Value="#2196F3"/>
+                <Setter Property="TextColor" Value="White"/>
+                <Setter Property="BorderColor" Value="White"/>
+                <Setter Property="BorderWidth" Value="1"/>
+                <Setter Property="CornerRadius" Value="5"/>
+                <Setter Property="Margin" Value="0,10,0,0"/>
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <ContentPage.MenuBarItems>
         <MenuBarItem Text="File">
             <MenuFlyoutItem Text="Quit" Command="{Binding QuitCommand}"/>
         </MenuBarItem>
         <MenuBarItem Text="Locations">
-            <MenuFlyoutSubItem Text="Change Location">
-                <MenuFlyoutItem Text="Boston, MA"/>
-                <MenuFlyoutItem Text="Redmond, WA"/>
-                <MenuFlyoutItem Text="St. Louis, MO"/>
-            </MenuFlyoutSubItem>
-            <MenuFlyoutItem Text="Add a Location" Command="{Binding AddLocationCommand}"/>
+            <MenuFlyoutItem Text="Change Location" Command="{Binding ChangeLocationCommand}"/>
         </MenuBarItem>
         <MenuBarItem Text="View">
-            <MenuFlyoutItem Text="Refresh" Command="{Binding RefreshCommand}"/>
+            <MenuFlyoutItem Text="Refresh" Clicked="OnGetWeatherButtonClicked" />
             <MenuFlyoutItem Text="Toggle Light/Dark Mode" Command="{Binding ToggleModeCommand}"/>
         </MenuBarItem>
+
     </ContentPage.MenuBarItems>
 
-    <Grid
-        ColumnDefinitions="{OnIdiom Phone='*', Default='*,500'}"
-        RowDefinitions="*"
-        >
+    <!--<ContentPage.ToolbarItems>
+        <ToolbarItem
+            Text="Refresh"
+            />
+    </ContentPage.ToolbarItems>-->
 
+    <AbsoluteLayout>
+        <Grid
+        AbsoluteLayout.LayoutBounds="0, 0, 1, 1"
+        AbsoluteLayout.LayoutFlags="All"
+        ColumnDefinitions="{OnIdiom Phone='*', Default='*'}"
+        RowDefinitions="*">
+            <StackLayout Grid.Row="1" Margin="0,10,0,0" Orientation="Vertical">
+
+        </StackLayout>
         <!-- Main content -->
         <ScrollView Grid.Column="0">
-            <VerticalStackLayout
-                Padding="{OnIdiom Phone='0,50',Default='0,50'}"
-                Spacing="{OnIdiom Phone=25,Default=50}">
+            <StackLayout
+                Padding="{OnIdiom Phone='0,30',Default='0,30'}"
+                Spacing="{OnIdiom Phone=20,Default=30}">
                 
-                <!-- Top widgets -->
+                        <!--<Button
+                            Clicked="OnGetWeatherButtonClicked"
+                            Text="Get Weather"
+                            Style="{StaticResource ButtonStyle}"/>-->
+                         <!--Top widgets--> 
                 <FlexLayout
                     IsVisible="{OnIdiom Phone=False, Default=True}"
                     MinimumHeightRequest="360"
@@ -47,39 +69,36 @@
                     AlignContent="Center"
                     JustifyContent="SpaceEvenly">
                     <v:CurrentWidget
-                        WidthRequest="200" />
-                    <v:WindLiveWidget 
-                        x:Name="WindWidget"
-                        WidthRequest="200" />
-                    <StackLayout
-            Grid.Row="2"
-            Margin="0,10,0,0"
-            Orientation="Vertical">
-                        <Button
-                BackgroundColor="Blue"
-                BorderColor="White"
-                BorderWidth="1"
-                Clicked="OnGetWeatherButtonClicked"
-                Text="Get Weather"
-                TextColor="White" />
-                    </StackLayout>
+                        WidthRequest="200" x:Name="CurrentWidgetControl" />
+                    <ContentView x:Name="WindLiveWidgetPlaceholder" WidthRequest="200">
+                    </ContentView>
+
                 </FlexLayout>
 
                 <v:CurrentWidget
                     IsVisible="{OnIdiom Phone=True, Default=False}"/>
-    
+
                 <BoxView HeightRequest="1" />
 
-                <v:Next24HrWidget />
-                <v:Next7DWidget />
+                <ContentView x:Name="Next24HrWidgetPlaceholder" HorizontalOptions="Start">
+                </ContentView>
+                <ContentView x:Name="Next7DWidgetPlaceholder" HorizontalOptions="Fill">
+                </ContentView>
 
-            </VerticalStackLayout>
+            </StackLayout>
         </ScrollView>
+        <!--<WebView Grid.Column="{OnIdiom Phone=0, Default=1}"
+            Source="https://embed.windy.com" />-->
 
-        <!-- Widget panel -->
-        <v:WidgetsPanel Grid.Column="{OnIdiom Phone=0, Default=1}"
-                        IsVisible="{OnIdiom Phone=False, Default=True}"/>
 
     </Grid>
+        <ImageButton
+        Source="{Binding FavoriteImageSource}"
+        WidthRequest="40"
+        HeightRequest="40"
+        AbsoluteLayout.LayoutBounds="1, 0, AutoSize, AutoSize"
+        AbsoluteLayout.LayoutFlags="PositionProportional"
+        Command="{Binding FavoritesCommand}"/>
+</AbsoluteLayout>
 
 </ContentPage>

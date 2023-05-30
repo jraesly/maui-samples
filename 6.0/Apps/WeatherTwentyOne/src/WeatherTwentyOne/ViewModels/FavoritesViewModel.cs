@@ -1,17 +1,18 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using WeatherClient2021;
-using Location = WeatherClient2021.Location;
+using System.Windows.Input;
+using WeatherTwentyOne.Helpers;
+using WeatherTwentyOne.Models;
 
 namespace WeatherTwentyOne.ViewModels;
 
 public class FavoritesViewModel : INotifyPropertyChanged
 {
-    IWeatherService weatherService = new WeatherService(null);
+    private ObservableCollection<FavoriteLocation> favorites;
+    private static WeatherUpdateService _weatherUpdateService;
 
-    private ObservableCollection<Location> favorites;
-    public ObservableCollection<Location> Favorites {
+    public ObservableCollection<FavoriteLocation> Favorites {
         get {
             return favorites;
         }
@@ -21,25 +22,8 @@ public class FavoritesViewModel : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
-
-    async void Fetch()
-    {
-        var locations = await weatherService.GetLocations(string.Empty);
-
-        UpdateFavorites(locations);
-
-        OnPropertyChanged(nameof(Favorites));
-
-    }
-
-    private void UpdateFavorites(IEnumerable<Location> locations)
-    {
-        favorites = new ObservableCollection<Location>();
-        for (int i = locations.Count() - 1; i >= 0; i--)
-        {
-            favorites.Add(locations.ElementAt(i));
-        }
-    }
+    private readonly FavoriteLocationsService _favoriteLocationsService;
+    public ICommand LocationSelectedCommand { get; }
 
     public event PropertyChangedEventHandler PropertyChanged;
 
@@ -52,6 +36,37 @@ public class FavoritesViewModel : INotifyPropertyChanged
 
     public FavoritesViewModel()
     {
-        Fetch();
+        _favoriteLocationsService = new FavoriteLocationsService();
+        LoadFavoriteLocations();
+        LocationSelectedCommand = new Command<FavoriteLocation>(OnLocationSelected);
     }
+    private void LoadFavoriteLocations()
+    {
+        Favorites = new ObservableCollection<FavoriteLocation>(_favoriteLocationsService.GetFavoriteLocations());
+    }
+
+    public void RefreshFavoriteLocations()
+    {
+        LoadFavoriteLocations();
+    }
+
+    private async void OnLocationSelected(FavoriteLocation location)
+    {
+        if (location == null)
+        {
+            return;
+        }
+
+        // Set LocationService.Instance latitude, longitude, city, and state to locations
+        LocationService.Instance.Latitude = location.Latitude ;
+        LocationService.Instance.Longitude = location.Longitude;
+        LocationService.Instance.City = location.City;
+        LocationService.Instance.State = location.State;
+        _weatherUpdateService = new WeatherUpdateService();
+
+       await _weatherUpdateService.UpdateWeatherData();
+    }
+
+
+
 }

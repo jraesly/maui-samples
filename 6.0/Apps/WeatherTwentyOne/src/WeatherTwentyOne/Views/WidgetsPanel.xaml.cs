@@ -1,10 +1,16 @@
+using WeatherTwentyOne.Models;
+
 namespace WeatherTwentyOne.Views;
 
 public partial class WidgetsPanel
 {
-    public WidgetsPanel()
+    public OpenWeatherMapModel weatherData;
+
+    public WidgetsPanel(OpenWeatherMapModel weatherData)
     {
         InitializeComponent();
+
+        BindingContext = weatherData;
     }
 
     async void OnTapped(object sender, EventArgs eventArgs)
@@ -20,6 +26,7 @@ public partial class WidgetsPanel
         await Task.Delay(1000);
 
         await g.FadeTo(1, 400);
+
 
     }
 }

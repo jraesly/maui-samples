@@ -17,6 +17,8 @@ namespace WeatherTwentyOne.Models
         public List<Hourly> hourly { get; set; }
         public List<Daily> daily { get; set; }
         public List<Alert> alerts { get; set; }
+        public string City { get; set; }
+        public string State { get; set; }
 
         public class Alert
         {
@@ -94,12 +96,14 @@ namespace WeatherTwentyOne.Models
             public double wind_gust { get; set; }
             public List<Weather> weather { get; set; }
             public double pop { get; set; }
+            public string PopPercentage => $"{pop * 100}%";
+
         }
 
         public class Minutely
         {
             public int dt { get; set; }
-            public int precipitation { get; set; }
+            public double precipitation { get; set; }
         }
         public class Temp
         {

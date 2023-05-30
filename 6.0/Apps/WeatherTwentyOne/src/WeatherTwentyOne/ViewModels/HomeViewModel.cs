@@ -1,295 +1,182 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using WeatherTwentyOne.Helpers;
 using WeatherTwentyOne.Models;
+using WeatherTwentyOne.Pages;
+using WeatherTwentyOne.Views;
+using Microsoft.Maui.Dispatching;
+using System.Windows.Input;
+using System.Diagnostics;
+using Microsoft.Maui.Devices.Sensors;
 
-namespace WeatherTwentyOne.ViewModels;
-
-public class HomeViewModel : INotifyPropertyChanged
+namespace WeatherTwentyOne.ViewModels
 {
-    public List<Forecast> Week { get; set; }
-
-    public List<Forecast> Hours { get; set; }
-
-    public Command QuitCommand { get; set; } = new Command(() => {
-        Application.Current.Quit();
-    });
-
-    public Command AddLocationCommand { get; set; } = new Command(() => {
-        // nav to modal form
-    });
-
-    public Command<string> ChangeLocationCommand { get; set; } = new Command<string>((location) => {
-        // change primary location
-    });
-
-    public Command RefreshCommand { get; set; } = new Command(() => {
-        // fake a refresh call
-    });
-
-    private Command toggleModeCommand;
-
-    public Command ToggleModeCommand {
-        get {
-            return toggleModeCommand;
-        }
-        set {
-            toggleModeCommand = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public HomeViewModel()
+    public class HomeViewModel : INotifyPropertyChanged
     {
-        InitData();
+        private readonly HomePage _homePage;
 
-        ToggleModeCommand = new Command(() => {
+        private static WeatherUpdateService _weatherUpdateService;
+        public static WeatherUpdateService WeatherUpdateServiceInstance
+        {
+            get => _weatherUpdateService;
+            set => _weatherUpdateService ??= value;
+        }
+        private string _favoriteImageSource;
+        public string FavoriteImageSource
+        {
+            get => _favoriteImageSource;
+            set => SetProperty(ref _favoriteImageSource, value);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private OpenWeatherMapModel _weatherData;
+        public OpenWeatherMapModel WeatherData
+        {
+            get => _weatherData;
+            set => SetProperty(ref _weatherData, value);
+        }
+
+        private string _locationTitle = "";
+        public string LocationTitle
+        {
+            get => _locationTitle;
+            set => SetProperty(ref _locationTitle, value);
+        }
+
+        private bool _isRefreshing;
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            set => SetProperty(ref _isRefreshing, value);
+        }
+
+        public ICommand QuitCommand { get; }
+        public ICommand AddLocationCommand { get; }
+        public ICommand ChangeLocationCommand { get; }
+        public ICommand RefreshCommand { get; }
+        public ICommand ToggleModeCommand { get; }
+        public ICommand FavoritesCommand { get; }
+
+        public HomeViewModel(HomePage homePage)
+        {
+            _homePage = homePage;
+
+            QuitCommand = new Command(Application.Current.Quit);
+            ChangeLocationCommand = new Command<string>(ChangeLocation);
+            RefreshCommand = new Command(async () => await RefreshWeatherData());
+            ToggleModeCommand = new Command(ToggleMode);
+            FavoritesCommand = new Command(Favorites);
+        }
+        private void Favorites()
+        {
+            var favLocation = new FavoriteLocation
+            {
+                Latitude = LocationService.Instance.Latitude,
+                Longitude = LocationService.Instance.Longitude,
+                City = LocationService.Instance.City,
+                State = LocationService.Instance.State
+            };
+            var favlocService = new FavoriteLocationsService();
+            if (favlocService.LocationExists(favLocation))
+            {
+                favlocService.RemoveFavoriteLocation(favLocation);
+            }
+            else
+            {
+                favlocService.AddFavoriteLocation(favLocation);
+            }
+            IsLocationAFavorite(favlocService, favLocation);
+        }
+        private async void ChangeLocation(string location)
+        {
+            // change primary location
+            string cityState = await _homePage.DisplayPromptAsync("Enter City, State", "Please enter the City, State name:");
+            var newLocation = await LocationHelper.GetLocationFromUserInputAsync(cityState);
+            LocationService.Instance.SetLocation(newLocation.latitude, newLocation.longitude, newLocation.city, newLocation.state);
+            // Update the LocationTitle property
+            LocationTitle = $"{newLocation.city}, {newLocation.state}";
+            await RefreshWeatherData();
+        }
+
+        private void ToggleMode()
+        {
             App.Current.UserAppTheme = App.Current.UserAppTheme == AppTheme.Light ? AppTheme.Dark : AppTheme.Light;
-        });
-    }
+        }
+        public static async Task<HomeViewModel> CreateAsync(HomePage homePage)
+        {
+            var viewModel = new HomeViewModel(homePage);
+            await viewModel.InitializeAsync();
+            return viewModel;
+        }
+        private async Task InitializeAsync()
+        {
+            var favlocService = new FavoriteLocationsService();
+            await LocationHelper.GetLocationAsync();
+            LocationTitle = $"{LocationService.Instance.City}, {LocationService.Instance.State}";
+            _weatherUpdateService = new WeatherUpdateService();
+            _weatherUpdateService.WeatherDataUpdated += OnWeatherDataUpdated;
+            _weatherUpdateService.Start();
+            IsLocationAFavorite(favlocService);
+        }
 
-    private void InitData()
-    {
-        Week = new List<Forecast>
+        public void IsLocationAFavorite(FavoriteLocationsService favlocService, FavoriteLocation favoriteLocation = null)
+        {
+            favoriteLocation ??= new FavoriteLocation
+                {
+                    Latitude = LocationService.Instance.Latitude,
+                    Longitude = LocationService.Instance.Longitude,
+                    City = LocationService.Instance.City,
+                    State = LocationService.Instance.State
+                };
+
+            if (favlocService.LocationExists(favoriteLocation))
             {
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(1),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_high_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 52 }, Maximum = new Maximum { Unit = "F", Value = 77 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(2),
-                    Day = new Day{ Phrase = "fluent_weather_partly_cloudy" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 61 }, Maximum = new Maximum { Unit = "F", Value = 82 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(3),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 62 }, Maximum = new Maximum { Unit = "F", Value = 77 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(4),
-                    Day = new Day{ Phrase = "fluent_weather_thunderstorm_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 57 }, Maximum = new Maximum { Unit = "F", Value = 80 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(5),
-                    Day = new Day{ Phrase = "fluent_weather_thunderstorm_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 49 }, Maximum = new Maximum { Unit = "F", Value = 61 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(6),
-                    Day = new Day{ Phrase = "fluent_weather_partly_cloudy" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 49 }, Maximum = new Maximum { Unit = "F", Value = 68 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(7),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 47 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(1),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_high_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 52 }, Maximum = new Maximum { Unit = "F", Value = 77 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(2),
-                    Day = new Day{ Phrase = "fluent_weather_partly_cloudy" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 61 }, Maximum = new Maximum { Unit = "F", Value = 82 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(3),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 62 }, Maximum = new Maximum { Unit = "F", Value = 77 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(4),
-                    Day = new Day{ Phrase = "fluent_weather_thunderstorm_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 57 }, Maximum = new Maximum { Unit = "F", Value = 80 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(5),
-                    Day = new Day{ Phrase = "fluent_weather_thunderstorm_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 49 }, Maximum = new Maximum { Unit = "F", Value = 61 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(6),
-                    Day = new Day{ Phrase = "fluent_weather_partly_cloudy" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 49 }, Maximum = new Maximum { Unit = "F", Value = 68 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Today.AddDays(7),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 47 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                }
-            };
-
-        Hours = new List<Forecast>
+                FavoriteImageSource = "heart.png";
+            }
+            else
             {
-                new Forecast
+                FavoriteImageSource = "unheart.png";
+            }
+        }
+
+        private void OnWeatherDataUpdated(object sender, OpenWeatherMapModel weatherData)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                WeatherData = weatherData;
+            });
+            _homePage.InitializeWidgets(weatherData);
+        }
+
+        private async Task RefreshWeatherData()
+        {
+            try
+            {
+                // Add IsRefreshing = true and task.run
+                IsRefreshing = true;
+                await Task.Run(async () =>
                 {
-                    DateTime = DateTime.Now.AddHours(1),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 47 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(2),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 47 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                }
-                ,
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(3),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 48 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                }
-                ,
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(4),
-                    Day = new Day{ Phrase = "fluent_weather_rain_showers_day_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 49 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                }
-                ,
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(5),
-                    Day = new Day{ Phrase = "fluent_weather_cloudy_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 52 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(6),
-                    Day = new Day{ Phrase = "fluent_weather_cloudy_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 53 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(7),
-                    Day = new Day{ Phrase = "fluent_weather_cloudy_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 58 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(8),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 63 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(9),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 64 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(10),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 65 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(11),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 68 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(12),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 68 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(13),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 68 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(14),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 65 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(15),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 63 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(16),
-                    Day = new Day{ Phrase = "fluent_weather_sunny_20_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 60 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(17),
-                    Day = new Day{ Phrase = "fluent_weather_moon_16_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 58 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(18),
-                    Day = new Day{ Phrase = "fluent_weather_moon_16_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 54 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(19),
-                    Day = new Day{ Phrase = "fluent_weather_moon_16_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 53 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(20),
-                    Day = new Day{ Phrase = "fluent_weather_moon_16_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 52 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(21),
-                    Day = new Day{ Phrase = "fluent_weather_moon_16_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 50 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(22),
-                    Day = new Day{ Phrase = "fluent_weather_moon_16_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 47 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                },
-                new Forecast
-                {
-                    DateTime = DateTime.Now.AddHours(23),
-                    Day = new Day{ Phrase = "fluent_weather_moon_16_filled" },
-                    Temperature = new Temperature{ Minimum = new Minimum{ Unit = "F", Value = 47 }, Maximum = new Maximum { Unit = "F", Value = 67 } },
-                }
-            };
+                    await _weatherUpdateService.UpdateWeatherData();
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating weather data: {ex.Message}");
+            }
+            finally
+            {
+                IsRefreshing = false;
+            }
+        }
+
+        protected void SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (!EqualityComparer<T>.Default.Equals(field, value))
+            {
+                field = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
     }
-
-    public event PropertyChangedEventHandler PropertyChanged;
-
-    protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-    {
-        PropertyChangedEventHandler handler = PropertyChanged;
-        if (handler != null)
-            handler(this, new PropertyChangedEventArgs(propertyName));
-    }
-
 }

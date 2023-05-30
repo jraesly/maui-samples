@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using WeatherTwentyOne.Helpers;
 using WeatherTwentyOne.Pages;
+
 
 namespace WeatherTwentyOne;
 
@@ -15,6 +17,13 @@ public partial class App : Application
             Shell.Current.CurrentItem = PhoneTabs;
 
         //Routing.RegisterRoute(nameof(SettingsPage), typeof(SettingsPage));
+    }
+
+    protected override async void OnStart()
+    {
+        base.OnStart();
+
+        await LocationHelper.GetLocationAsync();
     }
 
     async void TapGestureRecognizer_Tapped(System.Object sender, System.EventArgs e)

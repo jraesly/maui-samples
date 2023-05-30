@@ -6,7 +6,9 @@
     <VerticalStackLayout.Resources>
         <c:TempSpanConverter x:Key="TempSpanConverter"/>
         <c:MaxTempOffsetConverter x:Key="MaxTempOffsetConverter"/>
-        <c:MinTempOffsetConverter x:Key="MinTempOffsetConverter"/>
+        <c:StringIsNotEmptyConverter x:Key="StringIsNotEmptyConverter"/>
+        <c:UTCToLocalTimeConverter x:Key="UTCToLocalTimeConverter" />
+        <c:PopPercentageConverter x:Key="PopPercentageConverter" />
     </VerticalStackLayout.Resources>
 
     <Label
@@ -18,60 +20,74 @@
         <HorizontalStackLayout
             Spacing="12"
             Padding="{OnIdiom Phone='15,0',Default='25,0'}"
-            BindableLayout.ItemsSource="{Binding Week}">
+            BindableLayout.ItemsSource="{Binding daily}">
             <BindableLayout.ItemTemplate>
                 <DataTemplate>
                     <VerticalStackLayout>
-                        <Label Text="{Binding DateTime, StringFormat='{0:ddd}'}" class="Subhead"
+                        <Label Text="{Binding dt, Converter={StaticResource UTCToLocalTimeConverter}, StringFormat='{0:ddd}'}" 
+                               class="Subhead"
                                HeightRequest="34" HorizontalOptions="Center"/>
-                        <Label Text="{Binding Temperature.Maximum.Value, StringFormat='{0:F0}°'}" class="Subhead"
+                        <Label Text="{Binding temp.max, StringFormat='{0:F0}°'}" class="Subhead"
                                HeightRequest="34" HorizontalOptions="Center"/>
-                        <Image Source="{Binding Day.Phrase, StringFormat='{0:F2}.png'}"
+                        <Image Source="{Binding weather[0].IconUrl}"
                                WidthRequest="34"
                                HeightRequest="34"
                                HorizontalOptions="Center"/>
-                        <BoxView
+                        <!--<BoxView
                             WidthRequest="1"
                             HeightRequest="1"
-                            Margin="{Binding Temperature.Maximum.Value, Converter={StaticResource MaxTempOffsetConverter}}"
+                            Margin="{Binding temp.min}"
                             />
                         <Label
-                            Text="{Binding Temperature.Maximum.Value, StringFormat='{0:F0}°'}"
+                            Text="{Binding temp.max, StringFormat='{0:F0}°'}"
                             class="Subhead" HorizontalOptions="Center" HeightRequest="20"/>
                         <BoxView
                             BackgroundColor="{StaticResource Accent_Blue100}"
                             WidthRequest="10"
-                            CornerRadius="5"
-                            HorizontalOptions="Center">
+                            CornerRadius="1"
+                            HorizontalOptions="CenterAndExpand">
                             <BoxView.HeightRequest>
                                 <MultiBinding Converter="{StaticResource TempSpanConverter}">
-                                    <Binding Path="Temperature.Minimum.Value" FallbackValue="0"/>
-                                    <Binding Path="Temperature.Maximum.Value" FallbackValue="100"/>
+                                    <Binding Path="temp.min"/>
+                                    <Binding Path="temp.max" FallbackValue="100"/>
                                 </MultiBinding>
                             </BoxView.HeightRequest>
                         </BoxView>
                         <Label
-                            Text="{Binding Temperature.Minimum.Value, StringFormat='{0:F0}°'}"
+                            Text="{Binding temp.min, StringFormat='{0:F0}°'}"
                             class="Subhead" HorizontalOptions="Center" HeightRequest="20"/>
                         <BoxView
                             WidthRequest="1"
                             HeightRequest="1"
-                            Margin="{Binding Temperature.Minimum.Value, Converter={StaticResource MinTempOffsetConverter}}"
+                            Margin="{Binding temp.min}"
                             />
-                        <BoxView class="HRule"/>
+                        <BoxView class="HRule"/>-->
                         <StackLayout
-                            Orientation="Horizontal"
-                            HeightRequest="40"
-                            HorizontalOptions="Center">
+                                Orientation="Horizontal"
+                                HeightRequest="40"
+                                HorizontalOptions="Center">
                             <Image
-                                Source="sm_solid_umbrella.png"
-                                WidthRequest="16"
-                                HeightRequest="16"
-                                VerticalOptions="Center"/>
-                            <Label
-                                Text="13%" 
-                                class="SubContent" 
-                                VerticalOptions="Center"/>
+                                    x:Name="UmbrellaImage"
+                                    Source="sm_solid_umbrella.png"
+                                    WidthRequest="16"
+                                    HeightRequest="16"
+                                    VerticalOptions="Center"
+                                    IsVisible="False">
+                            <Image.Triggers>
+                                <DataTrigger
+                                        TargetType="Image"
+                                        Binding="{Binding Source={x:Reference PopPercentageLabel}, Path=Text, Converter={StaticResource StringIsNotEmptyConverter}}"
+                                        Value="True">
+                                    <Setter Property="IsVisible" Value="True" TargetName="UmbrellaImage"/>
+                                </DataTrigger>
+                                </Image.Triggers>
+                            </Image>
+                              <Label
+                                    x:Name="PopPercentageLabel"
+                                    Text="{Binding pop, Converter={StaticResource PopPercentageConverter}}"
+                                    class="SubContent" 
+                                    VerticalOptions="Center"/>
+
                         </StackLayout>
 
                     </VerticalStackLayout>

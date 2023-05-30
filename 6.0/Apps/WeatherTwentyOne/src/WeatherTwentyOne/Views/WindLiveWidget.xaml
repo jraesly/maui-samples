@@ -4,7 +4,7 @@
 
     <Grid>
         <Grid.GestureRecognizers>
-            <TapGestureRecognizer Tapped="OnTapped"/>
+            <!--<TapGestureRecognizer Tapped="OnTapped"/>-->
         </Grid.GestureRecognizers>
         <Image
             VerticalOptions="Center"
@@ -27,7 +27,7 @@
         HorizontalOptions="Center"
         class="SubContent"/>
     <Label
-        Text="14|25"
+        Text="{Binding current.wind_speed, StringFormat='{0:0}'}"
         HorizontalOptions="Center"
         class="Title"/>
 

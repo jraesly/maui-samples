@@ -36,11 +36,12 @@
             <FlyoutItem Title="Home" Style="{StaticResource HomeFlyout}">
                 <ShellContent ContentTemplate="{DataTemplate page:HomePage}"/>
             </FlyoutItem>
+
+            <FlyoutItem Title="Map" Style="{StaticResource MapFlyout}">
+                <ShellContent Route="mapPage" ContentTemplate="{DataTemplate page:MapPage}"/>
+            </FlyoutItem>
             <FlyoutItem Title="Favorites" Style="{StaticResource FavFlyout}">
                 <ShellContent ContentTemplate="{DataTemplate page:FavoritesPage}"/>
-            </FlyoutItem>
-            <FlyoutItem Title="Map" Style="{StaticResource MapFlyout}">
-                <ShellContent ContentTemplate="{DataTemplate page:MapPage}"/>
             </FlyoutItem>
             <FlyoutItem Title="Settings" Route="settings" FlyoutItemIsVisible="False">
                 <ShellContent ContentTemplate="{DataTemplate page:SettingsPage}"/>

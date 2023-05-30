@@ -32,7 +32,11 @@ public static class MauiProgram
                 del.ExtendsContentIntoTitleBar = true;
             }));
 #endif
-        });
+        })
+        .ConfigureEssentials(essentials =>
+        {
+            essentials.UseMapServiceToken(Constants.BingMapsAPIKey);
+        }); ;
 
         var services = builder.Services;
 #if WINDOWS
