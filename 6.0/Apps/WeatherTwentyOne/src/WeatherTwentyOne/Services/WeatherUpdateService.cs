@@ -1,7 +1,7 @@
-﻿using System;
-using System.Timers;
+﻿using System.Timers;
 using WeatherTwentyOne.Models;
 using WeatherTwentyOne.Services;
+using Timer = System.Timers.Timer;
 
 namespace WeatherTwentyOne.Helpers
 {
@@ -22,7 +22,7 @@ namespace WeatherTwentyOne.Helpers
 
         public void Stop() => _timer.Stop();
 
-        private Timer CreateTimer(int updateIntervalInSeconds)
+        private System.Timers.Timer CreateTimer(int updateIntervalInSeconds)
         {
             var timer = new Timer(updateIntervalInSeconds * 1000);
             timer.Elapsed += OnTimerElapsed;
